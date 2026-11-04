@@ -1,0 +1,24 @@
+.DS_Store
+
+# Swift Package Manager
+.build/
+.swiftpm/
+DerivedData/
+apps/macos/build/
+
+# Xcode user state
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# Windows（预留）
+apps/windows/**/bin/
+apps/windows/**/obj/
+apps/windows/.vs/
+
+# Local secrets and scratch files
+.env
+*.log
+
+# Local rollback snapshots
+.backups/

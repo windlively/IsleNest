@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:IsleNest}/apps/macos",
+            "name": "Debug IsleNest (apps/macos)",
+            "target": "IsleNest",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug IsleNest (apps/macos)"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:IsleNest}/apps/macos",
+            "name": "Release IsleNest (apps/macos)",
+            "target": "IsleNest",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release IsleNest (apps/macos)"
+        }
+    ]
+}
