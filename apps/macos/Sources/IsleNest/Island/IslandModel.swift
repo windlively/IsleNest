@@ -14,7 +14,6 @@ final class IslandModel: ObservableObject {
     @Published var launchPage = 0
     @Published var isDropTargeted = false
     @Published var showsShelf = false
-    @Published var showsRecentFiles = false
     @Published var showsPomodoro = false
 
     private var noticeDismissTask: Task<Void, Never>?

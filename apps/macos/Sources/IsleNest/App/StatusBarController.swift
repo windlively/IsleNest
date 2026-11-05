@@ -66,6 +66,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         toggleItem.target = self
         toggleItem.action = #selector(toggleIsland)
         menu.addItem(toggleItem)
+
+        let workspace = NSMenuItem(title: "打开工作台", action: #selector(openWorkspace), keyEquivalent: "")
+        workspace.target = self
+        menu.addItem(workspace)
         menu.addItem(.separator())
 
         let region = NSMenuItem(title: "区域截屏", action: #selector(captureRegion), keyEquivalent: "")
@@ -137,6 +141,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func toggleIsland() {
         controller?.toggleIsland()
+    }
+
+    @objc private func openWorkspace() {
+        controller?.openWorkspace()
     }
 
     @objc private func captureRegion() {

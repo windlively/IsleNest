@@ -195,12 +195,16 @@ struct IslandRootView: View {
                     ResultView(result: result, model: model, actions: actions)
                 } else if model.showsShelf {
                     ShelfView(config: config, model: model, actions: actions)
-                } else if model.showsRecentFiles {
-                    RecentFilesView(store: recentFiles, model: model, actions: actions)
                 } else if model.showsPomodoro {
                     PomodoroView(timer: timer, model: model, actions: actions)
                 } else {
-                    HomeView(config: config, model: model, timer: timer, actions: actions)
+                    HomeView(
+                        config: config,
+                        model: model,
+                        timer: timer,
+                        recentFiles: recentFiles,
+                        actions: actions
+                    )
                 }
             }
             .frame(

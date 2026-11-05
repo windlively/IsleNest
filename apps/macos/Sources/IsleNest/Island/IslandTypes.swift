@@ -142,10 +142,8 @@ enum IslandFocusID: Hashable {
     case pomodoroToggle
     case pomodoroReset
     case pomodoroSkip
-    case recentFiles
-    case recentBack
-    case recentRefresh
     case recentFile(URL)
+    case workspace
     case shelf
     case shelfBack
     case shelfAdd
@@ -157,7 +155,6 @@ enum IslandFocusID: Hashable {
     case launch(UUID)
     case addLaunch
     case editLaunch
-    case settings
     case collapse
     case resultCopy
     case resultSave

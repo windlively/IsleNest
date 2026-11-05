@@ -218,6 +218,7 @@ final class ConfigStoreTests: XCTestCase {
         store.settings.style = .floating
         store.settings.theme = .ember
         store.settings.appearance = .dark
+        store.settings.workspaceBackdrop = .dense
         try store.addFolder(at: try makeTempDirectory())
 
         store.resetSettings()
@@ -226,6 +227,7 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(store.settings.style, .automatic)
         XCTAssertEqual(store.settings.theme, .moss)
         XCTAssertEqual(store.settings.appearance, .system)
+        XCTAssertEqual(store.settings.workspaceBackdrop, .frosted)
         XCTAssertTrue(store.settings.onboardingCompleted)
         XCTAssertEqual(store.folders.count, 1)
     }

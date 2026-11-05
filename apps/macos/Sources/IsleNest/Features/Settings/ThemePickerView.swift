@@ -23,6 +23,7 @@ private struct ThemeSwatch: View {
     let isSelected: Bool
     let action: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
 
     var body: some View {
@@ -55,7 +56,7 @@ private struct ThemeSwatch: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.12)) {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.12)) {
                 isHovered = hovering
             }
         }
@@ -120,6 +121,6 @@ private struct ThemeSwatch: View {
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
         }
-        .animation(.easeOut(duration: 0.16), value: isSelected)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: isSelected)
     }
 }

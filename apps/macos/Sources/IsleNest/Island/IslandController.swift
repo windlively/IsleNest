@@ -46,14 +46,12 @@ final class IslandController: NSObject {
     private var suspensionCount = 0
     private var isCapturing = false
     private var isSystemHidden = false
-    private var isSettingsOpen = false
+    private var isWorkspaceOpen = false
     private var isOnboardingOpen = false
     private var isPresentingCaptureResult = false
     private var hoverArmed = true
 
-    private lazy var settingsWindow = SettingsWindowController(config: config) { [weak self] in
-        self?.settingsDidClose()
-    }
+    private var workspaceWindow: WorkspaceWindowController!
 
     private lazy var onboardingWindow = OnboardingWindowController { [weak self] in
         self?.onboardingDidFinish()
@@ -68,6 +66,22 @@ final class IslandController: NSObject {
         self.display = DisplayCoordinator(config: config)
         IslandTheme.apply(config.settings.theme)
         super.init()
+
+        workspaceWindow = WorkspaceWindowController(
+            config: config,
+            pomodoro: pomodoro,
+            recentFiles: recentFiles,
+            actions: WorkspaceActions(
+                capture: { [weak self] kind in self?.captureFromWorkspace(kind) },
+                recordRegion: { [weak self] in
+                    self?.workspaceWindow.close()
+                    self?.startRegionRecording()
+                },
+                sampleColor: { [weak self] in self?.sampleColor() },
+                revealFile: { url in NSWorkspace.shared.activateFileViewerSelecting([url]) }
+            ),
+            onClose: { [weak self] in self?.workspaceDidClose() }
+        )
     }
 
     func start() {
@@ -375,7 +389,7 @@ final class IslandController: NSObject {
             editLaunch: { [weak self] in self?.openSettings(tab: .launch) },
             openFolder: { [weak self] id in self?.openFolder(id) },
             openLaunch: { [weak self] id in self?.openLaunch(id) },
-            openSettings: { [weak self] in self?.openSettings(tab: .general) },
+            openWorkspace: { [weak self] in self?.openWorkspace() },
             copyResult: { [weak self] in self?.copyResult() },
             saveResult: { [weak self] in self?.saveResult() },
             shareResult: { [weak self] in self?.shareResult() },
@@ -405,11 +419,7 @@ final class IslandController: NSObject {
             pomodoroToggle: { [weak self] in self?.pomodoro.toggle() },
             pomodoroReset: { [weak self] in self?.pomodoro.reset() },
             pomodoroSkip: { [weak self] in self?.pomodoro.skip() },
-            toggleRecentFiles: { [weak self] in self?.toggleRecentFiles() },
-            refreshRecentFiles: { [weak self] in self?.recentFiles.load(force: true) },
             openRecentFile: { [weak self] url in self?.openRecentFile(url) },
-            revealRecentFile: { url in NSWorkspace.shared.activateFileViewerSelecting([url]) },
-            copyRecentPath: { [weak self] url in self?.copyRecentPath(url) },
             sampleColor: { [weak self] in self?.sampleColor() },
             addShelfFiles: { [weak self] in self?.addShelfFiles() },
             shelfDrop: { [weak self] in self?.shelfDrop($0) ?? false },
@@ -488,7 +498,6 @@ final class IslandController: NSObject {
         model.keyboardFocusVisible = false
         model.showsShelf = false
         model.showsPomodoro = false
-        model.showsRecentFiles = false
         hoverArmed = true
 
         guard let scene = activeScene else {
@@ -599,7 +608,6 @@ final class IslandController: NSObject {
         model.keyboardFocusVisible = false
         model.showsShelf = false
         model.showsPomodoro = false
-        model.showsRecentFiles = false
         for scene in scenes {
             scene.setPeeking(false)
             scene.setActive(scene === activeScene)
@@ -625,7 +633,6 @@ final class IslandController: NSObject {
         model.keyboardFocusVisible = false
         model.showsShelf = false
         model.showsPomodoro = false
-        model.showsRecentFiles = false
         for scene in scenes {
             scene.setPeeking(false)
             scene.presenter.show(layout: scene.collapsedLayout, makeKey: false)
@@ -735,31 +742,23 @@ final class IslandController: NSObject {
                 .pomodoroBack,
                 .collapse
             ]
-        } else if model.showsRecentFiles {
-            var items: [IslandFocusID] = [.recentRefresh]
-            items += recentFiles.files.map { .recentFile($0.url) }
-            items.append(.recentBack)
-            items.append(.collapse)
-            focusItems = items
         } else {
             var items: [IslandFocusID] = CaptureKind.allCases.map { .capture($0) }
             items.append(.record)
+            items.append(.colorPicker)
+            items += recentFiles.files.prefix(3).map { .recentFile($0.url) }
 
-            items += QuickLocation.allCases.map { .location($0) }
             let folderPage = ItemPage(config.folders, index: model.folderPage)
-            let visibleFolders = folderPage.items
-            for folder in visibleFolders {
+            for folder in folderPage.items {
                 items.append(.folder(folder.id))
             }
             if config.folders.count < ConfigStore.homeItemCount {
                 items.append(.addFolder)
             }
             if folderPage.count > 1 { items.append(.nextFolderPage) }
-            items.append(.manageFolders)
 
             let launchPage = ItemPage(config.launchItems, index: model.launchPage)
-            let visibleLaunchItems = launchPage.items
-            for item in visibleLaunchItems {
+            for item in launchPage.items {
                 items.append(.launch(item.id))
             }
             if config.launchItems.count < ConfigStore.homeItemCount {
@@ -767,12 +766,10 @@ final class IslandController: NSObject {
             }
             if config.launchItems.isEmpty { items.append(.addWebsite) }
             if launchPage.count > 1 { items.append(.nextLaunchPage) }
-            items.append(.editLaunch)
+
             items.append(.pomodoro)
-            items.append(.recentFiles)
-            items.append(.colorPicker)
             items.append(.shelf)
-            items.append(.settings)
+            items.append(.workspace)
             items.append(.collapse)
             focusItems = items
         }
@@ -841,12 +838,6 @@ final class IslandController: NSObject {
                 model.showsPomodoro = false
                 updateFocusItems()
                 model.selectedFocus = .pomodoro
-                return true
-            }
-            if model.showsRecentFiles {
-                model.showsRecentFiles = false
-                updateFocusItems()
-                model.selectedFocus = .recentFiles
                 return true
             }
             if model.result != nil {
@@ -922,8 +913,7 @@ final class IslandController: NSObject {
         case .shelf:
             model.showsShelf = true
             model.showsPomodoro = false
-            model.showsRecentFiles = false
-            model.keyboardFocusVisible = false
+                        model.keyboardFocusVisible = false
             updateFocusItems()
             model.selectedFocus = focusItems.first
         case .shelfBack:
@@ -942,16 +932,10 @@ final class IslandController: NSObject {
             pomodoro.reset()
         case .pomodoroSkip:
             pomodoro.skip()
-        case .recentFiles:
-            toggleRecentFiles()
-        case .recentBack:
-            model.showsRecentFiles = false
-            updateFocusItems()
-            model.selectedFocus = .recentFiles
-        case .recentRefresh:
-            recentFiles.load(force: true)
         case .recentFile(let url):
             openRecentFile(url)
+        case .workspace:
+            openWorkspace()
         case .colorPicker:
             sampleColor()
         case .shelfAdd:
@@ -982,8 +966,6 @@ final class IslandController: NSObject {
             nextPage(folders: false)
         case .resultRetake:
             if !model.isResultBusy, let kind = model.result?.kind { startCapture(kind) }
-        case .settings:
-            openSettings(tab: .general)
         case .collapse:
             collapse(animated: true)
         case .resultCopy:
@@ -1271,7 +1253,7 @@ final class IslandController: NSObject {
         recentFiles.$files
             .sink { [weak self] _ in
                 DispatchQueue.main.async {
-                    guard let self, self.model.showsRecentFiles else {
+                    guard let self, self.model.isExpanded, !self.model.showsPomodoro else {
                         return
                     }
                     self.updateFocusItems()
@@ -1287,7 +1269,6 @@ final class IslandController: NSObject {
         model.showsPomodoro.toggle()
         if model.showsPomodoro {
             model.showsShelf = false
-            model.showsRecentFiles = false
         }
         model.keyboardFocusVisible = false
         updateFocusItems()
@@ -1295,21 +1276,6 @@ final class IslandController: NSObject {
     }
 
     // MARK: - Recent files
-
-    private func toggleRecentFiles() {
-        guard !isCapturing, !isSystemHidden else {
-            return
-        }
-        model.showsRecentFiles.toggle()
-        if model.showsRecentFiles {
-            model.showsShelf = false
-            model.showsPomodoro = false
-            recentFiles.load()
-        }
-        model.keyboardFocusVisible = false
-        updateFocusItems()
-        model.selectedFocus = model.showsRecentFiles ? focusItems.first : .recentFiles
-    }
 
     private func openRecentFile(_ url: URL) {
         guard FileManager.default.fileExists(atPath: url.path) else {
@@ -1332,16 +1298,6 @@ final class IslandController: NSObject {
                 )
             )
         }
-    }
-
-    private func copyRecentPath(_ url: URL) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        guard pasteboard.setString(url.path, forType: .string) else {
-            presentNotice(IslandNotice(kind: .error, message: "复制路径失败"))
-            return
-        }
-        presentNotice(IslandNotice(kind: .success, message: "已复制路径"))
     }
 
     // MARK: - Color picker
@@ -1704,8 +1660,7 @@ final class IslandController: NSObject {
         model.showsShelf.toggle()
         if model.showsShelf {
             model.showsPomodoro = false
-            model.showsRecentFiles = false
-        }
+                    }
         model.keyboardFocusVisible = false
         updateFocusItems()
         model.selectedFocus = model.showsShelf ? focusItems.first : .shelf
@@ -1940,7 +1895,6 @@ final class IslandController: NSObject {
         cancelHoverTimers()
         model.showsShelf = false
         model.showsPomodoro = false
-        model.showsRecentFiles = false
         model.dismissNotice()
 
         captureTask = Task { [weak self] in
@@ -2088,7 +2042,6 @@ final class IslandController: NSObject {
         cancelHoverTimers()
         model.showsShelf = false
         model.showsPomodoro = false
-        model.showsRecentFiles = false
         model.dismissNotice()
 
         captureTask = Task { [weak self] in
@@ -2157,7 +2110,6 @@ final class IslandController: NSObject {
         cancelHoverTimers()
         model.showsShelf = false
         model.showsPomodoro = false
-        model.showsRecentFiles = false
         model.dismissNotice()
 
         captureTask = Task { [weak self] in
@@ -2809,22 +2761,36 @@ final class IslandController: NSObject {
         }
     }
 
-    // MARK: - Settings and onboarding
+    // MARK: - Workspace, settings and onboarding
+
+    private func captureFromWorkspace(_ kind: CaptureKind) {
+        workspaceWindow.close()
+        startCapture(kind)
+    }
+
+    func openWorkspace(section: WorkspaceSection = .overview) {
+        guard !isCapturing, !isSystemHidden, !isOnboardingOpen else {
+            return
+        }
+        isWorkspaceOpen = true
+        collapseImmediatelyForExternalUI()
+        workspaceWindow.show(section: section)
+    }
 
     func openSettings(tab: SettingsTab) {
         guard !isCapturing, !isSystemHidden, !isOnboardingOpen else {
             return
         }
-        isSettingsOpen = true
+        isWorkspaceOpen = true
         collapseImmediatelyForExternalUI()
-        settingsWindow.show(tab: tab)
+        workspaceWindow.show(section: .settings, settingsTab: tab)
     }
 
-    private func settingsDidClose() {
-        guard isSettingsOpen else {
+    private func workspaceDidClose() {
+        guard isWorkspaceOpen else {
             return
         }
-        isSettingsOpen = false
+        isWorkspaceOpen = false
         configurationDidChange()
         if !model.isExpanded, !isOnboardingOpen {
             DispatchQueue.main.async {
@@ -2838,8 +2804,8 @@ final class IslandController: NSObject {
             return
         }
         isOnboardingOpen = true
-        if isSettingsOpen {
-            settingsWindow.close()
+        if isWorkspaceOpen {
+            workspaceWindow.close()
         }
         beginSuspension()
         collapseImmediatelyForExternalUI()

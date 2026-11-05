@@ -36,6 +36,12 @@ public enum IslandAppearanceMode: String, Codable, CaseIterable, Sendable {
     case dark
 }
 
+public enum WorkspaceBackdropStyle: String, Codable, CaseIterable, Sendable {
+    case clear
+    case frosted
+    case dense
+}
+
 public struct AppSettings: Codable, Equatable, Sendable {
     public var style: IslandStyle
     public var trigger: IslandTrigger
@@ -43,6 +49,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public var captureOutputMode: CaptureOutputMode
     public var theme: IslandThemePreset
     public var appearance: IslandAppearanceMode
+    public var workspaceBackdrop: WorkspaceBackdropStyle
     public var displayIslandWidths: [String: Double]
     public var hoverExpandDelay: TimeInterval
     public var hoverCollapseDelay: TimeInterval
@@ -58,6 +65,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         captureOutputMode: CaptureOutputMode = .preview,
         theme: IslandThemePreset = .moss,
         appearance: IslandAppearanceMode = .system,
+        workspaceBackdrop: WorkspaceBackdropStyle = .frosted,
         displayIslandWidths: [String: Double] = [:],
         hoverExpandDelay: TimeInterval = 0.35,
         hoverCollapseDelay: TimeInterval = 0.5,
@@ -72,6 +80,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         self.captureOutputMode = captureOutputMode
         self.theme = theme
         self.appearance = appearance
+        self.workspaceBackdrop = workspaceBackdrop
         self.displayIslandWidths = displayIslandWidths
         self.hoverExpandDelay = hoverExpandDelay
         self.hoverCollapseDelay = hoverCollapseDelay
@@ -88,6 +97,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case captureOutputMode
         case theme
         case appearance
+        case workspaceBackdrop
         case displayIslandWidths
         case hoverExpandDelay
         case hoverCollapseDelay
@@ -105,6 +115,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         captureOutputMode = try container.decodeIfPresent(CaptureOutputMode.self, forKey: .captureOutputMode) ?? .preview
         theme = try container.decodeIfPresent(IslandThemePreset.self, forKey: .theme) ?? .moss
         appearance = try container.decodeIfPresent(IslandAppearanceMode.self, forKey: .appearance) ?? .system
+        workspaceBackdrop = try container.decodeIfPresent(WorkspaceBackdropStyle.self, forKey: .workspaceBackdrop) ?? .frosted
         displayIslandWidths = try container.decodeIfPresent([String: Double].self, forKey: .displayIslandWidths) ?? [:]
         hoverExpandDelay = try container.decodeIfPresent(TimeInterval.self, forKey: .hoverExpandDelay) ?? 0.35
         hoverCollapseDelay = try container.decodeIfPresent(TimeInterval.self, forKey: .hoverCollapseDelay) ?? 0.5

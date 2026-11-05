@@ -11,7 +11,7 @@ struct IslandActions {
     var editLaunch: () -> Void
     var openFolder: (UUID) -> Void
     var openLaunch: (UUID) -> Void
-    var openSettings: () -> Void
+    var openWorkspace: () -> Void
     var copyResult: () -> Void
     var saveResult: () -> Void
     var shareResult: () -> Void
@@ -31,11 +31,7 @@ struct IslandActions {
     var pomodoroToggle: () -> Void
     var pomodoroReset: () -> Void
     var pomodoroSkip: () -> Void
-    var toggleRecentFiles: () -> Void
-    var refreshRecentFiles: () -> Void
     var openRecentFile: (URL) -> Void
-    var revealRecentFile: (URL) -> Void
-    var copyRecentPath: (URL) -> Void
     var sampleColor: () -> Void
     var addShelfFiles: () -> Void
     var shelfDrop: ([URL]) -> Bool

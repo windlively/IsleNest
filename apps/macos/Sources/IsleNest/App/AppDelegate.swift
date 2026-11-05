@@ -30,6 +30,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
+    @objc private func openWorkspaceFromMenu() {
+        controller?.openWorkspace()
+    }
+
     @objc private func openSettingsFromMenu() {
         controller?.openSettings(tab: .general)
     }
@@ -49,6 +53,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: ""
         )
         appMenu.addItem(.separator())
+
+        let workspaceItem = NSMenuItem(
+            title: "打开工作台",
+            action: #selector(openWorkspaceFromMenu),
+            keyEquivalent: "0"
+        )
+        workspaceItem.target = self
+        appMenu.addItem(workspaceItem)
 
         let settingsItem = NSMenuItem(
             title: "设置…",

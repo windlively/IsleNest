@@ -43,6 +43,23 @@ struct GeneralSettingsView: View {
             }
 
             SettingsCard(
+                title: "工作台背景",
+                footer: "使用 macOS 系统材质：通透最轻薄，磨砂适合长时间阅读，浓雾最沉稳。系统会随深浅外观与「减弱透明度」自动调整，切换后立即生效。"
+            ) {
+                SettingsPickerRow(
+                    title: "背景材质",
+                    detail: config.settings.workspaceBackdrop.detail
+                ) {
+                    Picker("背景材质", selection: $config.settings.workspaceBackdrop) {
+                        ForEach(WorkspaceBackdropStyle.allCases, id: \.self) { style in
+                            Text(style.displayName).tag(style)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+            }
+
+            SettingsCard(
                 title: "岛体",
                 footer: "每台显示器的菜单栏都会显示栖岛；“自动”在刘海屏与刘海同高融合，其他屏幕显示菜单栏悬浮药丸；浮动胶囊显示在菜单栏下方。浮动位置只对胶囊形态生效。"
             ) {
@@ -214,7 +231,7 @@ struct GeneralSettingsView: View {
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("这会把主题、深浅外观、形态、展开方式、单屏宽度、截屏输出和快捷键恢复为默认；不会删除已收藏的内容。")
+            Text("这会把主题、工作台背景、深浅外观、形态、展开方式、单屏宽度、截屏输出和快捷键恢复为默认；不会删除已收藏的内容。")
         }
     }
 
@@ -287,5 +304,29 @@ struct GeneralSettingsView: View {
             get: { width(for: screen) },
             set: { config.settings.displayIslandWidths[screen.configurationKey] = $0 }
         )
+    }
+}
+
+private extension WorkspaceBackdropStyle {
+    var displayName: String {
+        switch self {
+        case .clear:
+            return "通透"
+        case .frosted:
+            return "磨砂"
+        case .dense:
+            return "浓雾"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .clear:
+            return "最轻薄的一档，能看见更多桌面细节，适合深色桌面"
+        case .frosted:
+            return "标准磨砂，背景只剩柔和色块，内容最耐读"
+        case .dense:
+            return "更厚的系统材质，几乎只剩明暗与色彩氛围"
+        }
     }
 }

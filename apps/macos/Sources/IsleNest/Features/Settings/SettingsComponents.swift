@@ -201,5 +201,6 @@ struct SettingsBackdrop: View {
             }
         }
         .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 }
